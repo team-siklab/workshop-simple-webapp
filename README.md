@@ -58,18 +58,12 @@ This workshop will use Git as a platform medium, so
 
 ## Modules
 
-A workshop consists of multiple modules. 
-Each module should cover a single, cohesive topic and take between **30** and **60** minutes for all students to complete.
-Consider the least experienced students who are likely to take this workshop when scoping your modules.
+This workshop is broken up into multiple modules.
+You must complete each module before proceeding to the next.
 
-Provide a numbered list of your modules, and link to their respective branches.
-To link to a branch, use:
-
-```
-[a link to a module branch](/:org:/:repo:/tree/:branch:)
-```
-
-where `:org`, `:repo:`, and `:branch:` are replaced by their corresponding values.
-
-1. [Example Module](/team-siklab/workshop-base-template/tree/module-01)
-2.
+1. [Deploy a Node.js webapp on EC2](/team-siklab/workshop-simple-webapp/tree/module-01)
+2. [Augment your webapp with load-balancing](/team-siklab/workshop-simple-webapp/tree/module-02)
+3. [Improve scalability with auto-scaling](/team-siklab/workshop-simple-webapp/tree/module-03)
+4. [Using S3 to store file uploads](/team-siklab/workshop-simple-webapp/tree/module-04)
+5. [Improve security with IAM Roles](/team-siklab/workshop-simple-webapp/tree/module-05)
+6. [Offload file uploads to AWS Lambda](/team-siklab/workshop-simple-webapp/tree/module-06)
