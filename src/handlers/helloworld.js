@@ -5,7 +5,7 @@ const getInstanceId = () => {
     fetch('http://169.254.169.254/latest/meta-data/instance-id')
       .then(response => {
         if (response.status >= 400) { resolve('LOCAL') }
-        else { resolve(response.json()) }
+        else { resolve(response.text()) }
       })
       .catch(() => resolve('LOCAL'))
   })
