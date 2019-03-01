@@ -17,6 +17,7 @@ server.use(express.static('public'))
 
 // :: register route handlers
 server.get('/hello', require('./src/handlers/helloworld'))
+server.get('/computation', require('./src/handlers/computation'))
 
 // :: start the server
 server.listen(PORT, () => {
