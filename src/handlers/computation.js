@@ -1,8 +1,8 @@
-const computation = () => {
-  const limit = 1e6
+const { spawn } = require('threads')
 
-  return new Promise((resolve, reject) => {
-    // :: this is a deliberately long, inefficient computation
+const computation = () => {
+  const thread = spawn((input, done) => {
+    const limit = 1e6
     let lasthash = ''
 
     for (var i = 0; i < limit; i++) {
@@ -12,7 +12,21 @@ const computation = () => {
         .digest('hex')
     }
 
-    resolve(lasthash)
+    done(lasthash)
+  })
+
+  // :: ---
+  return new Promise((resolve, reject) => {
+    thread.on('message', (response) => {
+      console.log(`Thread returned response: ${response}`)
+      resolve(response)
+      thread.kill()
+    })
+
+    thread.on('exit', () => console.log('Worker terminated.'))
+
+    // :: start the thread
+    thread.send()
   })
 }
 
