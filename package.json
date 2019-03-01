@@ -1,0 +1,26 @@
+{
+  "name": "workshop-simple-webapp",
+  "version": "1.0.0",
+  "description": "Deploy a very rudimentary web application using AWS services.",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/team-siklab/workshop-simple-webapp.git"
+  },
+  "keywords": [],
+  "author": "Richard Neil Ilagan <ilagan@amazon.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/team-siklab/workshop-simple-webapp/issues"
+  },
+  "homepage": "https://github.com/team-siklab/workshop-simple-webapp#readme",
+  "private": true,
+  "dependencies": {
+    "dotenv-defaults": "1.0.2",
+    "express": "4.16.4"
+  }
+}
