@@ -62,8 +62,8 @@ This workshop is broken up into multiple modules.
 You must complete each module before proceeding to the next.
 
 1. [Deploy a Node.js webapp on EC2](../../tree/module-01)
-2. [Augment your webapp with load-balancing](/team-siklab/workshop-simple-webapp/tree/module-02)
-3. [Improve scalability with auto-scaling](/team-siklab/workshop-simple-webapp/tree/module-03)
-4. [Using S3 to store file uploads](/team-siklab/workshop-simple-webapp/tree/module-04)
-5. [Improve security with IAM Roles](/team-siklab/workshop-simple-webapp/tree/module-05)
-6. [Offload file uploads to AWS Lambda](/team-siklab/workshop-simple-webapp/tree/module-06)
+2. [Augment your webapp with load-balancing](../../tree/module-02)
+3. [Improve scalability with auto-scaling](../../tree/module-03)
+4. [Using S3 to store file uploads](../../tree/module-04)
+5. [Improve security with IAM Roles](../../tree/module-05)
+6. [Offload file uploads to AWS Lambda](../../tree/module-06)
