@@ -56,7 +56,9 @@ Make sure that this instance is publicly accessible both for `SSH` and `HTTP`, a
 <details>
   <summary><strong>Step-by-step instructions (expand for details)</strong></summary>
   <p>
+    
   1. In the console, choose **Services** at the top-left menu, and choose **EC2** under Compute.
+    
   2. Click the *Launch Instance** button. This will start a step-by-step wizard for creating a new EC2 instance.
   3. In the `Step 1` screen: select an **Ubuntu 18.04 LTS** AMI. 
   4. In the `Step 2` screen: select a `t3.micro` instance. 
@@ -102,7 +104,9 @@ has `chmod 400` permissions.
 <details>
   <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
   <p>
+    
   1. Locate the keyfile you downloaded in your computer. Optionally make sure it's in a directory that you can access easily.
+    
   2. In your terminal, run `chmod 400 [keyfile]`, where `[keyfile]` is the path to your keyfile `PEM` file.
      Your EC2 instance will reject connections if it detects that your keyfile is too open to the world.
 
@@ -157,8 +161,11 @@ If you don't have any preferences, `tmux` is a good choice.
 <details>
   <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
   <p>
+    
   1. Ensure you're inside an SSH connection to your instance.
+  
   2. Run `sudo apt-get update -y`. This will bring all installed packages on your instance up-to-date.
+  
   3. To make installing a specific version of Node.js easier, we'll use `nvm` command to manage our Node versions for us.
      You can [follow the instructions here](https://github.com/creationix/nvm#install--update-script) to install `nvm`, or just:
 
@@ -170,9 +177,11 @@ If you don't have any preferences, `tmux` is a good choice.
      Doing this step ensures that your SSH connection knows that there is a new `nvm` command available for you.
 
   5. Install Node.js version 8.10 by running `nvm install 8.10`.
+  
   6. Clone this repository onto youjr machine by running `git clone https://github.com/team-siklab/workshop-simple-webapp.git webapp`.
+  
   7. We've already prepared this project repository to automatically install everything it needs to run a server.
-     `cd webapp` to go into your project direftory, and then run `npm install` to install all the project dependencies.
+     `cd webapp` to go into your project directory, and then run `npm install` to install all the project dependencies.
 
   8. When you terminate your SSH connection later, this will also stop all processes you've run (including your web server).
      To prevent this from happening, we can use a terminal multiplexer to create a process separate from the one governing our connection.
@@ -181,10 +190,11 @@ If you don't have any preferences, `tmux` is a good choice.
   9. Run `tmux` to start the multiplexer.
 
   > **Note**: By running `tmux`, you're creating a completely separate process from the one you're on with your SSH connection.
-  > To go back to your original process (and leave whatever you're doing in `tmux` temporarily), just type `Ctrl+b` then `d` on your keyboard.
-  > To bo back into the `tmux` process (and go back to what you were doing), just type `tmux a`.
+  > - To go back to your original process (and leave whatever you're doing in `tmux` temporarily), just type `Ctrl+b` then `d` on your keyboard.
+  > - To bo back into the `tmux` process (and go back to what you were doing), just type `tmux a`.
 
   10. Make sure you're in your project directory, then run `npm start` to start your web server. By default, your server will start listening on port `3000`.
+  
   11. Locate your EC2 instance's **public IPv4 address** again, and confirm your web server is viewable by visiting `http://instance-ip-address:3000/hello` from a browser.
 
   ```
@@ -194,6 +204,7 @@ If you don't have any preferences, `tmux` is a good choice.
   ```
 
   12. If you get a meaningful response, congratulations, and you've successfully run a web server on your EC2 instance!
+  
   13. Back in your terminal, let's exit your SSH connection while leaving your web server running.
       Press `Ctrl-b` then `d` to detach your current `tmux` process, then type in `exit` to terminate your SSH connection.
 
