@@ -79,11 +79,26 @@ Make sure that the EC2 instance is in a different **public** subnet as your firs
       
     3. Also in `Step 3`: at the very bottom in **Advanced Settings**, add in the following startup script:
     ```
-    #!/bin/bash
-
-    cd workshop-simple-webapp
-    npm start
+    #!/bin/bash -xe
+    exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+    
+    curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | sh
+    source /.nvm/nvm.sh
+    
+    nvm install 8.10
+    nvm use 8.10
+    npm install -g forever
+    
+    git clone https://github.com/team-siklab/workshop-simple-webapp.git app
+    cd app
+    git checkout module-02
+    
+    npm install
+    forever start app.js
     ```
+
+    4. In `Step 6`: Make sure you use the same security group as the one you created before.
+    5. For your keypair: opt to use an existing one, and use the keypair you created before.
 
 2. Once your EC2 instance is ready, confirm that you can visit your web server on it by visiting it's
    **public IPv4 address** at port **3000**.
