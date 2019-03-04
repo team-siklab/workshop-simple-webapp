@@ -39,17 +39,16 @@ Create an AMI of the web server you created in Module 01.
 <details>
   <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
   <p>
-  1. In your EC2 dashboard, make sure the instance you created is selected.
+1. In your EC2 dashboard, make sure the instance you created is selected.
 
-  2. Select **Actions > Image > Create Image** from the top menu.
+2. Select **Actions > Image > Create Image** from the top menu.
 
-![create image](__assets/create-ami.png)
+   ![create image](__assets/create-ami.png)
 
-  3. Give your AMI a unique name you'll easily remember (and optionally a description), and set the same **10GB** of storage as before, 
-     then click **Create Image**.
+3. Give your AMI a unique name you'll easily remember (and optionally a description), and set the same **10GB** of storage as before, then click **Create Image**.
 
-  4. The AMI creation process will take a while. You can verify this by going to **AMIs** on the left-hand navigation
-     of your EC2 dashboard, and waiting until the status turns to `available`.
+4. The AMI creation process will take a while. You can verify this by going to **AMIs** on the left-hand navigation
+   of your EC2 dashboard, and waiting until the status turns to `available`.
   </p>
 </details>
 
@@ -69,29 +68,31 @@ Make sure that the EC2 instance is in a different **public** subnet as your firs
 <details>
   <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
   <p>
-  1. Follow the steps [in Step 1 of Module 01](../tree/module-01#1-create-an-ec2-instance), but do the following:
+    
+1. Follow the steps [in Step 1 of Module 01](../tree/module-01#1-create-an-ec2-instance), but do the following:
+
     1. In `Step 1`: Select **My AMIs** on the left, and select the AMI you just created.
     2. In `Step 3`: Use the same **Network**, but select a different **Subnet** than your first instance. 
-        The subnet of your first instance is visible in the Description tab when you select it on the dashboard.
-        
-  ![EC2 instance subnet](__assets/ec2-subnets.png)
+      The subnet of your first instance is visible in the Description tab when you select it on the dashboard.
+      
+      ![EC2 instance subnet](__assets/ec2-subnets.png)
+      
     3. Also in `Step 3`: at the very bottom in **Advanced Settings**, add in the following startup script:
+    ```
+    #!/bin/bash
 
-```
-#!/bin/bash
+    cd workshop-simple-webapp
+    npm start
+    ```
 
-cd workshop-simple-webapp
-npm start
-```
+2. Once your EC2 instance is ready, confirm that you can visit your web server on it by visiting it's
+   **public IPv4 address** at port **3000**.
 
-  2. Once your EC2 instance is ready, confirm that you can visit your web server on it by visiting it's
-     **public IPv4 address** at port **3000**.
+    ```
+    e.g.
 
-```
-e.g.
-
-http://52.221.0.100:3000
-```
+    http://52.221.0.100:3000
+    ```
   </p>
 </details>
 
