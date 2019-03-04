@@ -70,14 +70,11 @@ Make sure that the EC2 instance is in a different **public** subnet as your firs
   <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
   <p>
   1. Follow the steps [in Step 1 of Module 01](../tree/module-01#1-create-an-ec2-instance), but do the following:
-
     1. In `Step 1`: Select **My AMIs** on the left, and select the AMI you just created.
-
     2. In `Step 3`: Use the same **Network**, but select a different **Subnet** than your first instance. 
         The subnet of your first instance is visible in the Description tab when you select it on the dashboard.
         
-![EC2 instance subnet](__assets/ec2-subnets.png)
-
+  ![EC2 instance subnet](__assets/ec2-subnets.png)
     3. Also in `Step 3`: at the very bottom in **Advanced Settings**, add in the following startup script:
 
 ```
@@ -87,7 +84,7 @@ cd workshop-simple-webapp
 npm start
 ```
 
-  4. Once your EC2 instance is ready, confirm that you can visit your web server on it by visiting it's
+  2. Once your EC2 instance is ready, confirm that you can visit your web server on it by visiting it's
      **public IPv4 address** at port **3000**.
 
 ```
