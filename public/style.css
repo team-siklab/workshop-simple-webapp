@@ -38,3 +38,23 @@ body > * {
   padding-right: 10vw;
   flex-grow: 1;
 }
+
+.imageupload > * {
+  margin-bottom: 10px;
+}
+
+.imageupload [type=submit] {
+  padding: 12px 24px;
+  cursor: pointer;
+
+  background: rgba(0,0,0,.87);
+  color: white;
+
+  border: 0;
+
+  transition: background 0.1s linear;
+}
+
+.imageupload [type=submit]:hover {
+  background: #ff9900;
+}
