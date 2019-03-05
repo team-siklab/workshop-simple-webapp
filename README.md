@@ -1,198 +1,164 @@
-Module 3: Improve scalability with auto-scaling
+Module 4: Using S3 to store file uploads
 ===
 
-In this module, we'll look into improving our load-balanced architecture by introducing auto-scaling.
-Auto-scaling allows your architecture to automatically adapt to real-time changing demand.
-For example, if your servers are experiencing heavy load, auto-scaling can automatically add
-more servers behind your load balancer to help manage load.
+The AWS cloud is made up of 160+ services, all of which you can put together in interesting ways
+to create application workloads of vastly different functionalities. You can think of the AWS cloud
+as a collection of lego pieces that you just put together a certain way to get a certain result.
 
-This same technology can also be used to automatically refresh / replace instances that have been
-determined to be unhealthy, based on rules you provide. For example, if a server becomes unresponsive or 
-otherwise completely crashes, auto-scaling can replace that instance with a new one. 
+In this module, let's look at integrating [Amazon S3](https://aws.amazon.com/s3) into our application.
+Let's assume our web application requires image uploads of some sort --- we could always save uploaded images
+in the EC2 instances' disk (this is called [EBS](https://aws.amazon.com/ebs) if you remember), 
+but if the EC2 instance goes away for some reason (for example, auto scaling, or if it crashes), you stand
+the risk of losing your files. Not to mention that you will potentially have tens, or hundreds, maybe even thousands
+of EC2 instances --- wouldn't it be simpler to store files in a central repository?
 
-All of this happens without human intervention, so nobody needs to wake up at 3 AM to respond to 
-system failures.
+Amazon S3 is highly-durable, highly-available object storage. You can use it to reliably store
+a virtually unlimited number of files for your applications' use. 
 
 
 ## Solution Architecture
 
-We'll be building off the previous module's architecture.
-The web application will function in exactly the same way, except that after this module,
-our load balancer will serve requests to a dynamic fleet of web servers, completely managed 
-by auto-scaling.
+We'll introduce an **S3 bucket** into our architecture. All the web servers that we have running in our fleet
+will be able to save uploaded files into this S3 bucket.
 
 ![architecture](__assets/architecture.png)
 
-Notice that the architecture hasn't really changed since the last module --- we're just 
-augmenting our web server fleet with auto-scaling.
 
 
 ## Implementation Overview
 
 Make sure you're using the same application as from the previous module.
 
-### 1. Create an Auto-scaling group.
+### 1. Create an S3 bucket
 
-An auto-scaling group (ASG) automatically manages your fleet of EC2 instances for you.
-It follows a set of policies that you set to determine how many instances to add or remove from your fleet,
-and when it should do that (for example, it can add 2 instances automatically in response to a spike in network traffic).
+In Amazon S3, a bucket is a logical container for your objects. 
+You can create as many buckets as you want, and put in as many files as you want inside each.
 
-ASGs also monitor the health of your instances, so it can automatically replace instances when they become inoperable.
+When you create a bucket, you decide which AWS region it gets created in --- but take note that
+the bucket name **has to be unique globally**, across all AWS accounts. This means that you won't be able
+to create a bucket called `testbucket`, because somebody would probably have created that in the past.
 
-Finally, ASGs can also automatically deploy instances behind a load balancer, by assigning instances
-in a specific target group on creation. (Remember from the last module that load balancers distribute
-traffic between all instances inside a target group.)
+#### High-level instructions
 
-#### High-level Implementation
+Create an S3 bucket. For the purposes of this workshop, specify that this bucket is available for public access.
 
-Create an auto-scaling group using a new launch configuration. The launch configuration should use 
-the AMI you created, deployed onto `t3.micro` instances, and have the same user-data startup script
-as the previous module. Ensure instances use the security group you created, and have
-detailed monitoring enabled.
-
-Configure the auto-scaling group to start with just **1** instance, and have it deploy into all
-available public subnets in your VPC.
-
-Opt to have the ASG use your load balancer from the previous module, with a health check grace period
-of about 60 seconds.
-
-Have the ASG maintain an average of 50% CPU load across the fleet.
+> **Important**: To facilitate this workshop much more easily, we are **deliberately** making your S3 bucket publicly available.
+> In a real-life use-case, chances are you **shouldn't** make your bucket publicly available, and if you _have_ to make them publicly available,
+> there are generally better ways to do that rather than specifying that the entire bucket is plainly public.
 
 <details>
-  <summary><strong>Step-by-step directions (click to expand):</strong></summary>
+  <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
   <p>
-    
-1. Navigate to **Auto Scaling Groups** on the left-hand navigation of your EC2 dashboard. Click **Create Auto Scaling group** at the top of the resulting screen.
+1. Navigate to your S3 dashboard through the console.
 
-2. Select **Launch Configuration**, and opt to create a new launch configuration. Click **Next**.
+2. Create a bucket, and give it a name you'll easily remember and recognize. Note that it has to be unique across all buckets globally.
 
-> ASGs can use both Launch Configurations and Launch Templates.
-> Templates give more options and fine-grained control over your ASGs provisioning, 
-> but we'll use Launch Configurations for this workshop. 
-> Launch Configurations, while older, are still full-functioned, and will illustrate ASGs 
-> just as well in this workshop.
+3. Leave all the settings in `Step 2` at their default values, but spend the time to take a look at what you can potentially configure.
 
-3. Creating a new Launch Configuration looks like creating a new EC2 instance.
-   1. Opt to use your custom AMI.
-   2. Use a `t3.micro` instance.
-   3. Under **Launch Configuration**, give your configuration a name you'll remember.
-   4. Also opt in to Enable CloudWatch detailed monitoring.
+4. In `Step 3`, uncheck the 4 options for disabling public access to your bucket. **Read the warning above about this!**
 
-> Detailed monitoring, among other things, makes your CloudWatch metrics aggregate **per minute**,
-> instead of every 5 minutes by default.
-
-   5. Still in **Launch Configuration**, in Advanced Details, make sure you put in the User data startup script we used in Module 02.
-   ```
-   #!/bin/bash -xe
-   exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-   
-   curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | sh
-   source /.nvm/nvm.sh
-   
-   nvm install 8.10
-   nvm use 8.10
-   npm install -g forever
-   
-   git clone https://github.com/team-siklab/workshop-simple-webapp.git app
-   cd app
-   git checkout module-02
-   
-   npm install
-   forever start app.js
-   ```
-
-4. When prompted for the security group to use, make sure you select the SG you created for your fleet.
-
-5. After confirming the Launch Configuration details, click **Create launch configuration**.
-   This will create the configuration, and you should be brought back into the ASG creation screen.
-
-6. Back in the **Create Auto Scaling Group** wizard, give your ASG a name you'll remember.
-   1. Opt to start the ASG with just **1** instance.
-   2. Make sure you're deploying into the VPC Network you've used for this workshop, and select all 3 public subnets available in that network.
-   3. Under **Advanced Details**, opt to receive traffic from load balancers, then select the target group you created in the previous module. 
-   4. Still under **Advanced Details**, switch the Health Check Type to `ELB`, and the grace period to only around `60` seconds.
-
-   ![auto scaling step 1](__assets/asg-step1.png)
-
-7. In the next screen, opt to **Use scaling policies to adjust the capacity of this group**. This will let you use rules to dynamically control the number of instances within the ASG. Let's go with these:
-   1. Scale between `1` and `4` instances.
-   2. Let's leave **Metric Type** to `Average CPU Utilization`.
-   3. Target value at `50`.
-   4. Instances need `60` seconds to warm up after scaling.
-
-   ![auto scaling step 2](__assets/asg-step2.png)
-
-8. `Step 3` allows you to configure notifications to let you know when scaling takes place. Let's skip this for now.
-
-9. For tags, add a `Name` tag with a value that you'll remember. You should be able to tell right away that
-   this EC2 instance was created by auto-scaling. Make it something only you will think of.
-
-10. When you're satisfied with everything, click **Create Auto Scaling Group** at the last step.
+5. Once you're reviewed your configuration, finalize creating your bucket.
   </p>
 </details>
 
----
 
-### 2. Remove instances that aren't part of the ASG
+### 2. Create security credentials to upload to your bucket
 
-In a few minutes after creating your ASG (it'll need some time to warm up completely), it will start creating 
-new instances to satisfy the policies you gave it. You should see it create a new instance in a while.
+Not just anyone can write into your bucket, and that includes your web application.
+To be able to put stuff in, your web application will need to identify itself to AWS, and be granted permission to write into your bucket.
+In AWS, we do this using [AWS Identity and Access Management (IAM)](https://aws.amazon.com/iam).
 
-![asg new instances](__assets/asg-initial.png)
+We'll talk more about IAM and security in the next discussion topic.
 
-1. Open your load balancer URL `/hello` from a browser, and keep refreshing. Confirm that you see at least 3 instances being hit by the load balancer traffic.
+#### High-level instructions
 
-2. On your EC2 console, terminate the **2 instances** you created from the past modules. You should be left with only the instances created by your ASG.
+Create a new IAM user with programmatic access to your account.
+Give it full access privileges to your S3 bucket, and take note of the access keys provided.
 
-3. Confirm that your web site is still viewable through the load balancer URL.
+<details>
+  <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
+  <p>
+1. Navigate to your IAM dashboard through the console. Go to the **Users** section from the left-hand navigation.
 
----
+2. Click **Add User** at the top. Give your user a unique, memorable name, and select **Programmatic access** at the bottom. Click **Next**.
 
-### 3. Simulate heavy load
+3. The next screen allows you to select permissions for your user --- what they can and cannot do on what resources.
+   1. Select **Attach existing policies directly**, then select **Create policy**.
+   2. Use the **Visual Editor** in the next screen.
+   3. Select `S3` for **Service**.
+   4. Select `All S3 actions` for **Actions**.
+   5. Click **Resources**, then choose `Add ARN` for **bucket**. Put in your bucket name, then click **Add**.
+   6. Select `Any` for **object**.
+   7. Click **Review policy**. Give your policy a name and description, then if you're OK with it, click **Create Policy**.
 
-Now that we've set up an auto-scaling group, let's see how our architecture performs under heavy load.
-This workshop uses [Blazemeter](https://blazemeter.com) to run load testing. If you have a personal preference, feel free to use that instead. BlazeMeter lets you run up to 10 tests per month for free, with some constraints.
+4. You should be back in the **Add user** screen. Find the policy you just created, and add it to the user you're creating.
 
-1. If you don't have a BlazeMeter account, create one on their site.
+5. Go through steps 3 and 4, then click **Create user** once you're satisfied.
 
-2. Under **Projects**, create one for your tests. 
+6. If you've configured the user correctly, you should see a screen which displays the user's **Access key ID** and **Secret access key**. Copy both, and put them somewhere for now. **Make sure you don't let anybody else see them!**.
 
-3. Click **Create Test**, and select **Performance Tests**.
-
-4. At the top of the form, click **Enter URL/API Calls**. Use the URL of your load balancer with `/computation` fragment. This is a **GET** request.
-
-  > e.g. `http://alb-209238178.ap-southeast-1.elb.amazonaws.com/computation`
-
-  > **Note**: The app logic behind the `/computation` fragment is a deliberately computationally-expensive process. If you visit this page on your browser, there will be a subtle slowness in the response as it performs calculations in the server. On its own, it shouldn't be much, but when forced to perform the same calculation in bulk (like in this load test), the compute costs will eventually bring the server inoperable. 
-
-5. Under **Load Configuration**:
-   1. Set total users to `50`.
-   2. Set duration to the maximum of `20` minutes.
-   3. Set ramp up time to `1` minute.
-
-6. When you're satisfied with your settings, click the green **Run Test** button towards the left of the form.
-
-
-BlazeMeter will take a few minutes to prepare running your tests, then it will bombard your load balancer with HTTP requests for the next 20 minutes, while providing a nice visualization of the performance of your server during the test.
-
-During this time, take note of your instances and how they react:
-
-- Select an EC2 instance, then navigate to the **Monitoring** tab at the bottom. Keep an eye on what happens to your `CPU Utilization` as the test progresses. You can click on the graph to zoom it in.
-
-- You can also do the same with your load balancer.
-
-- If you navigate to your auto-scaling group, you can review the actions your ASG decide to take in the **Activity History** tab, monitor the instances managed by the ASG in the **Instances** tab, and check out CloudWatch graphs on **Monitoring**.
+![IAM new user](__assets/iam_newuser.png)
+  </p>
+</details>
 
 
-During your load testing, you should see that the CPU utilization of your EC2 instances start spiking towards `100%` CPU utilization as the load test requests ramp up. Eventually you should see new EC2 instances get created by your ASG to help distribute the load.
+### 3. Update your servers configuration to use your IAM user
 
-After the testing completes, your ASG will maintain your fleet size for a while to account for errant traffic, then after seeing that demand has gone down, it will also start removing EC2 instances to save you costs.
+Your web application is already configured to upload to an S3 bucket, but you will need to configure it with the credentials required to do so.
+The source code of the app is looking for the following environment variables:
 
-Sample results will look like the following:
+- `AWS_ACCESS_KEY` --- this is your IAM user's **Access key ID**
+- `AWS_SECRET_ACCESS_KEY` --- this is your IAM user's **Secret access key**
+- `AWS_UPLOAD_BUCKET_NAME` --- this is your S3 bucket name
 
-![results before scale](__assets/loadtest-beforescale.png)
+If you're interested to see how they're being used, look at `/src/config.js` and `/src/utils/upload.js` in this codebase.
 
-![results after scale](__assets/loadtest-afterscale.png)
+We will need to update our auto-scaling launch configuration to take these variables into account.
+
+<details>
+  <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
+  <p>
+1. Go to **Launch Configurations** on the left hand navigation of your **EC2 dashboard**.
+
+2. Select your configuration from earlier, then click **Actions**, then **Copy launch configuration**.
+
+3. In the resulting pane, go back to **Step 3**.
+   1. (Optional) You might want to change the name to something more meaningful.
+   2. In **User data** under Advanced Details, update it to the following. Make sure you change the appropriate values for the 3 `export` statements.
+```
+#!/bin/bash -xe
+exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+export AWS_ACCESS_KEY=<your access key>
+export AWS_SECRET_ACCESS_KEY=<your secret access key>
+export AWS_UPLOAD_BUCKET_NAME=<your S3 bucket name>
+
+curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | sh
+source /.nvm/nvm.sh
+
+nvm install 8.10
+nvm use 8.10
+npm install -g forever
+
+git clone https://github.com/team-siklab/workshop-simple-webapp.git app
+cd app
+git checkout module-02
+
+npm install
+forever start app.js
+```
+
+4. Click **Skip to review**, then click **Create launch configuration** if you're satisfied.
+
+5. Navigate to **Auto Scaling Groups**, then select your ASG. Click **Actions**, then **Edit**.
+
+6. Update the value of **Launch Configuration** to use your update configuration. Then click **Save**.
+
+7. Go to your EC2 **Instances**, and terminate all the instances belonging to your ASG. It might be easier to look at the **Instances** tab on your ASG, and terminate them one by one.
+
+8. Since you just rendered your web application offline, your ASG will automatically try to heal itself by creating new instances. This time, it will use your new launch configuration.
+  </p>
+</details>
 
 
 
