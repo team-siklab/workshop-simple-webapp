@@ -1,5 +1,10 @@
 require('dotenv-defaults').config()
 
+const configureAws = require('./src/config')
+configureAws()
+
+// :: ---
+
 const express = require('express')
 const server = express()
 const PORT = process.env.PORT
@@ -18,6 +23,7 @@ server.use(express.static('public'))
 // :: register route handlers
 server.get('/hello', require('./src/handlers/helloworld'))
 server.get('/computation', require('./src/handlers/computation'))
+server.post('/fileupload', require('./src/handlers/fileupload'))
 
 // :: start the server
 server.listen(PORT, () => {
