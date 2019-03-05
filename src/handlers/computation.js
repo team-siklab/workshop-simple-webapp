@@ -2,7 +2,7 @@ const { spawn } = require('threads')
 
 const computation = () => {
   const thread = spawn((input, done) => {
-    const limit = 1e6
+    const limit = 5e4
     let lasthash = ''
 
     for (var i = 0; i < limit; i++) {
