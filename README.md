@@ -61,8 +61,8 @@ Have the ASG maintain an average of 50% CPU load across the fleet.
 <details>
   <summary><strong>Step-by-step directions (click to expand):</strong></summary>
   <p>
-1. Navigate to **Auto Scaling Groups** on the left-hand navigation of your EC2 dashboard.
-   Click **Create Auto Scaling group** at the top of the resulting screen.
+    
+1. Navigate to **Auto Scaling Groups** on the left-hand navigation of your EC2 dashboard. Click **Create Auto Scaling group** at the top of the resulting screen.
 
 2. Select **Launch Configuration**, and opt to create a new launch configuration. Click **Next**.
 
@@ -131,6 +131,7 @@ Have the ASG maintain an average of 50% CPU load across the fleet.
   </p>
 </details>
 
+---
 
 ### 2. Remove instances that aren't part of the ASG
 
@@ -145,6 +146,7 @@ new instances to satisfy the policies you gave it. You should see it create a ne
 
 3. Confirm that your web site is still viewable through the load balancer URL.
 
+---
 
 ### 3. Simulate heavy load
 
@@ -159,16 +161,16 @@ This workshop uses [Blazemeter](https://blazemeter.com) to run load testing. If 
 
 4. At the top of the form, click **Enter URL/API Calls**. Use the URL of your load balancer with `/computation` fragment. This is a **GET** request.
 
-> e.g. `http://alb-209238178.ap-southeast-1.elb.amazonaws.com/computation`
+  > e.g. `http://alb-209238178.ap-southeast-1.elb.amazonaws.com/computation`
 
-> **Note**: The app logic behind the `/computation` fragment is a deliberately computationally-expensive process. If you visit this page on your browser, there will be a subtle slowness in the response as it performs calculations in the server. On its own, it shouldn't be much, but when forced to perform the same calculation in bulk (like in this load test), the compute costs will eventually bring the server inoperable. 
+  > **Note**: The app logic behind the `/computation` fragment is a deliberately computationally-expensive process. If you visit this page on your browser, there will be a subtle slowness in the response as it performs calculations in the server. On its own, it shouldn't be much, but when forced to perform the same calculation in bulk (like in this load test), the compute costs will eventually bring the server inoperable. 
 
-1. Under **Load Configuration**:
-  1. Set total users to `50`.
-  2. Set duration to the maximum of `20` minutes.
-  3. Set ramp up time to `1` minute.
+5. Under **Load Configuration**:
+   1. Set total users to `50`.
+   2. Set duration to the maximum of `20` minutes.
+   3. Set ramp up time to `1` minute.
 
-2. When you're satisfied with your settings, click the green **Run Test** button towards the left of the form.
+6. When you're satisfied with your settings, click the green **Run Test** button towards the left of the form.
 
 
 BlazeMeter will take a few minutes to prepare running your tests, then it will bombard your load balancer with HTTP requests for the next 20 minutes, while providing a nice visualization of the performance of your server during the test.
