@@ -161,13 +161,36 @@ forever start app.js
 </details>
 
 
+### 4. Test the image upload workflow
+
+Your web servers have an file upload form when you visit it at the root.
+(i.e. when you visit the load balancer URL, without anything else after it.)
+
+![simple webapp](__assets/simple-webapp.png)
+
+When you select an image and submit it to upload, the app logic will take your file
+and save it into the S3 bucket that you provided. The response page will give you a
+dump of the JSON response containing the direct URL of the file in S3. You can use that URL
+to download the file from S3 directly.
+
+If you visit your S3 bucket, you should also be able to view the files you've uploaded
+inside. You can also download and view them from the S3 bucket dashboard, as well as perform
+other actions like delete, or copy / move, or even control their lifecycle and access policies.
+
+![bucket contents](__assets/s3-contents.png)
+
 
 ## Summary
 
-Auto-scaling groups introduce automation into scaling and repairing infrastructure fleets on the AWS cloud.
-Because we are able to provision new resources so quickly on the AWS cloud, we don't have to think so much about how much capacity / resources we need in the future like in traditional IT infrastrucutre --- rather, we only want to know how much we need _right now_. We can always adjust to respond rapidly at any time. Auto-scaling groups make that whole process much easier by automating the process completely.
+Amazon S3 allows you to store virtually unlimited files on virtually unlimited storage in a very
+cost-efficient manner, while keeping them highly available and highly durable. Amazon S3 boasts a durability of 99.999999999% (that's 11 nines!). To put that into perspective, if you were to put
+10,000,000 files into an S3 bucket, you can expect to lose only one of those files in the next 10,000 years.
 
-In the next module, let's expand our web application a bit to use other AWS services.
+An understated advantage of using Amazon S3 is that it takes away load from your web servers.
+For example, when you visit the landing page of [Amazon.com](https://amazon.com), the landing page makes 
+around ~250 HTTPS requests to serve your page. Of these 250, only 206 are of static files, like images, CSS, and JS files. Those static files account for around **4.15 MB** of the total 4.6 MB of data transfer. If those files were served from Amazon S3, the web servers would get **80%** reduction in request counts, and a **90%** reduction in data throughput. That's very significant.
+
+In this module, we also touched a bit into implementing security and credentials into our web application, however, we honestly did it in a very insecure and dangerous way (like saving our access keys to the server environment variables --- yikes!). In the next module, let's explore ways to improve that.
 
 
-**Next:** [Using S3 to store file uploads](team-siklab/workshop-simple-webapp/tree/module-04)
+**Next:** [Improve security with IAM Roles](team-siklab/workshop-simple-webapp/tree/module-04)
