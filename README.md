@@ -1,196 +1,205 @@
-Module 2: Augment your web application with load balancing
+Module 3: Improve scalability with auto-scaling
 ===
 
-In this module, we'll talk about how you can use load balancing to scale out applications
-across multiple instances. Being able to scale your workloads out is essential in 
-running applications that can rapidly adapt to changing real-time demand.
+In this module, we'll look into improving our load-balanced architecture by introducing auto-scaling.
+Auto-scaling allows your architecture to automatically adapt to real-time changing demand.
+For example, if your servers are experiencing heavy load, auto-scaling can automatically add
+more servers behind your load balancer to help manage load.
+
+This same technology can also be used to automatically refresh / replace instances that have been
+determined to be unhealthy, based on rules you provide. For example, if a server becomes unresponsive or 
+otherwise completely crashes, auto-scaling can replace that instance with a new one. 
+
+All of this happens without human intervention, so nobody needs to wake up at 3 AM to respond to 
+system failures.
 
 
 ## Solution Architecture
 
 We'll be building off the previous module's architecture.
 The web application will function in exactly the same way, except that after this module,
-we'll be using multiple instances to run multiple web servers.
-
-A load balancer will be deployed to receive HTTP requests.
-It will also be responsible for delegating the requests across all the web servers behind it.
+our load balancer will serve requests to a dynamic fleet of web servers, completely managed 
+by auto-scaling.
 
 ![architecture](__assets/architecture.png)
 
-You can extend the same architecture by adding more instances if you'd like.
-**By deploying across multiple availability zones**, you can take advantage of the 
-[AWS global infrastructure](https://aws.amazon.com/about-aws/global-infrastructure/),
-and introduce more durability and resilience to your applications.
+Notice that the architecture hasn't really changed since the last module --- we're just 
+augmenting our web server fleet with auto-scaling.
+
 
 ## Implementation Overview
 
 Make sure you're using the same application as from the previous module.
 
-### 1. Create an AMI of your web server
+### 1. Create an Auto-scaling group.
 
-Once you've created an EC2 instance and set it up according to your liking, you can
-**create an image of it for future use** (called an AMI). This way, when we need to create a copy
-of your instance, you won't need to go through all the steps you went through the first time.
+An auto-scaling group (ASG) automatically manages your fleet of EC2 instances for you.
+It follows a set of policies that you set to determine how many instances to add or remove from your fleet,
+and when it should do that (for example, it can add 2 instances automatically in response to a spike in network traffic).
 
-#### High-level instructions
+ASGs also monitor the health of your instances, so it can automatically replace instances when they become inoperable.
 
-Create an AMI of the web server you created in Module 01.
+Finally, ASGs can also automatically deploy instances behind a load balancer, by assigning instances
+in a specific target group on creation. (Remember from the last module that load balancers distribute
+traffic between all instances inside a target group.)
 
-<details>
-  <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
-  <p>
-1. In your EC2 dashboard, make sure the instance you created is selected.
+#### High-level Implementation
 
-2. Select **Actions > Image > Create Image** from the top menu.
+Create an auto-scaling group using a new launch configuration. The launch configuration should use 
+the AMI you created, deployed onto `t3.micro` instances, and have the same user-data startup script
+as the previous module. Ensure instances use the security group you created, and have
+detailed monitoring enabled.
 
-   ![create image](__assets/create-ami.png)
+Configure the auto-scaling group to start with just **1** instance, and have it deploy into all
+available public subnets in your VPC.
 
-3. Give your AMI a unique name you'll easily remember (and optionally a description), and set the same **10GB** of storage as before, then click **Create Image**.
+Opt to have the ASG use your load balancer from the previous module, with a health check grace period
+of about 60 seconds.
 
-4. The AMI creation process will take a while. You can verify this by going to **AMIs** on the left-hand navigation
-   of your EC2 dashboard, and waiting until the status turns to `available`.
-  </p>
-</details>
-
-
-### 2. Create a second EC2 instance using your image
-
-If you remember when you created your first EC2 image, you actually had to select an AMI for your first step.
-AWS maintains a curated set of barebones AMIs for you to use, but you can also use your own.
-
-In this step, we'll use the AMI you just created to start a copy of your web server.
-
-#### High-level instructions
-
-Create another EC2 instance using your new AMI.
-Make sure that the EC2 instance is in a different **public** subnet as your first one.
+Have the ASG maintain an average of 50% CPU load across the fleet.
 
 <details>
-  <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
+  <summary><strong>Step-by-step directions (click to expand):</strong></summary>
   <p>
-    
-1. Follow the steps [in Step 1 of Module 01](../tree/module-01#1-create-an-ec2-instance), but do the following:
+1. Navigate to **Auto Scaling Groups** on the left-hand navigation of your EC2 dashboard.
+   Click **Create Auto Scaling group** at the top of the resulting screen.
 
-    1. In `Step 1`: Select **My AMIs** on the left, and select the AMI you just created.
-    2. In `Step 3`: Use the same **Network**, but select a different **Subnet** than your first instance. 
-      The subnet of your first instance is visible in the Description tab when you select it on the dashboard.
-      
-      ![EC2 instance subnet](__assets/ec2-subnets.png)
-      
-    3. Also in `Step 3`: at the very bottom in **Advanced Settings**, add in the following startup script:
-    ```
-    #!/bin/bash -xe
-    exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
-    
-    curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | sh
-    source /.nvm/nvm.sh
-    
-    nvm install 8.10
-    nvm use 8.10
-    npm install -g forever
-    
-    git clone https://github.com/team-siklab/workshop-simple-webapp.git app
-    cd app
-    git checkout module-02
-    
-    npm install
-    forever start app.js
-    ```
+2. Select **Launch Configuration**, and opt to create a new launch configuration. Click **Next**.
 
-    4. In `Step 6`: Make sure you use the same security group as the one you created before.
-    5. For your keypair: opt to use an existing one, and use the keypair you created before.
+> ASGs can use both Launch Configurations and Launch Templates.
+> Templates give more options and fine-grained control over your ASGs provisioning, 
+> but we'll use Launch Configurations for this workshop. 
+> Launch Configurations, while older, are still full-functioned, and will illustrate ASGs 
+> just as well in this workshop.
 
-2. Once your EC2 instance is ready, confirm that you can visit your web server on it by visiting it's
-   **public IPv4 address** at port **3000**.
+3. Creating a new Launch Configuration looks like creating a new EC2 instance.
+   1. Opt to use your custom AMI.
+   2. Use a `t3.micro` instance.
+   3. Under **Launch Configuration**, give your configuration a name you'll remember.
+   4. Also opt in to Enable CloudWatch detailed monitoring.
 
-    ```
-    e.g.
+> Detailed monitoring, among other things, makes your CloudWatch metrics aggregate **per minute**,
+> instead of every 5 minutes by default.
 
-    http://52.221.0.100:3000
-    ```
-  </p>
-</details>
-
-
-### 3. Create an Application Load Balancer (ALB)
-
-We have three different kinds of load balancers in AWS --- ALBs make it easier to segregate 
-incoming HTTP/S requests across a fleet of servers behind it.
-
-We'll create an ALB, and add the two instances we currently have behind it to start routing traffic.
-We will also use this setup later when we get to automatically healing and scaling our infrastructure.
-
-#### High-level instructions
-
-Create an ALB and a target group, and add the two instances you already have into the target group.
-Ensure that the `:80` listener on the ALB redirects to the `:3000` listener on the servers.
-Confirm that the ALB is working by visiting its DNS name in a browser.
-
-<details>
-  <summary><strong>Step-by-step instructions (click to expand)</strong></summary>
-  <p>
-1. Select **Load Balancers** from the left-hand navigation of your EC2 dashboard, then click **Create Load Balancer** at the top.
+   5. Still in **Launch Configuration**, in Advanced Details, make sure you put in the User data startup script we used in Module 02.
+   ```
+   #!/bin/bash -xe
+   exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
    
-2. Select **Application Load Balancer** as the type of load balancer to create.
-   Application Load Balancers (ALBs) is a level-7 load balancer that automatically scales to demand, 
-   and makes it easy to route HTTP/S requests to your servers.
+   curl https://raw.githubusercontent.com/creationix/nvm/master/install.sh | sh
+   source /.nvm/nvm.sh
+   
+   nvm install 8.10
+   nvm use 8.10
+   npm install -g forever
+   
+   git clone https://github.com/team-siklab/workshop-simple-webapp.git app
+   cd app
+   git checkout module-02
+   
+   npm install
+   forever start app.js
+   ```
 
-3. In `Step 1`:
+4. When prompted for the security group to use, make sure you select the SG you created for your fleet.
 
-   1. Give your ALB a unique name you'll remember.
-   2. Make sure you have a listener for `HTTP` onto port `80` of the load balancer.
-   3. Make sure the VPC is your default one, and opt to plce the ALB in all of the availability zones offered.
-   4. Leave everything else at the default.
+5. After confirming the Launch Configuration details, click **Create launch configuration**.
+   This will create the configuration, and you should be brought back into the ASG creation screen.
 
-4. Don't mind the warning on `Step 2`.
+6. Back in the **Create Auto Scaling Group** wizard, give your ASG a name you'll remember.
+   1. Opt to start the ASG with just **1** instance.
+   2. Make sure you're deploying into the VPC Network you've used for this workshop, and select all 3 public subnets available in that network.
+   3. Under **Advanced Details**, opt to receive traffic from load balancers, then select the target group you created in the previous module. 
+   4. Still under **Advanced Details**, switch the Health Check Type to `ELB`, and the grace period to only around `60` seconds.
 
-5. In `Step 3`: select the security group you also use for your instances. Confirm that it allows `HTTP` traffic on port `80` from anywhere.
+   ![auto scaling step 1](__assets/asg-step1.png)
 
-> **Note**: In real, practical use, you will probably want to use a different security group for your load balancers than the one you
-> use for your EC2 instances. This allows you to control the security of your network traffic flow better.
->
-> For example, you can allow `HTTP port 80` traffic on your load balancer from anywhere, but only allow `HTTP port 80` traffic 
-> from your load balancer to your EC2 instances, preventing anybody from directly accessing your web servers.
+7. In the next screen, opt to **Use scaling policies to adjust the capacity of this group**. This will let you use rules to dynamically control the number of instances within the ASG. Let's go with these:
+   1. Scale between `1` and `4` instances.
+   2. Let's leave **Metric Type** to `Average CPU Utilization`.
+   3. Target value at `50`.
+   4. Instances need `60` seconds to warm up after scaling.
 
-6. In `Step 4`: 
+   ![auto scaling step 2](__assets/asg-step2.png)
 
-  1. Opt to create a **new target group**.
-  2. Give your target group a unique name. It's probably a good idea to name it similarly to your ALB.
-  3. Keep target type to **Instance**.
-  4. Set protocol and port to `HTTP` and `3000`. These is where your web servers are listening in for incoming traffic.
-  5. For health checks, select `HTTP`, with the path set to `/hello`.
-  6. Under Advanced health check settings, set healthy threshold to `3`, and interval to `10`.
+8. `Step 3` allows you to configure notifications to let you know when scaling takes place. Let's skip this for now.
 
-7. In `Step 5`:
+9. For tags, add a `Name` tag with a value that you'll remember. You should be able to tell right away that
+   this EC2 instance was created by auto-scaling. Make it something only you will think of.
 
-   1. Look for your 2 instances from the bottom list, and select them.
-   2. Click **Add to Registered**. You should see both instances go up to the upper list.
-   3. Click **Next: Review**.
-
-8. Confirm your settings and then click **Create**. Your ALB will take a few minutes to provision and be ready for use.
-
-9. Your ALB will have a DNS name, viewable from the **Description** tab. When your ALB is ready, visit that URL using your browser,
-   and confirm that you're hitting one of the 2 servers you've prepared.
+10. When you're satisfied with everything, click **Create Auto Scaling Group** at the last step.
   </p>
 </details>
+
+
+### 2. Remove instances that aren't part of the ASG
+
+In a few minutes after creating your ASG (it'll need some time to warm up completely), it will start creating 
+new instances to satisfy the policies you gave it. You should see it create a new instance in a while.
+
+![asg new instances](__assets/asg-initial.png)
+
+1. Open your load balancer URL `/hello` from a browser, and keep refreshing. Confirm that you see at least 3 instances being hit by the load balancer traffic.
+
+2. On your EC2 console, terminate the **2 instances** you created from the past modules. You should be left with only the instances created by your ASG.
+
+3. Confirm that your web site is still viewable through the load balancer URL.
+
+
+### 3. Simulate heavy load
+
+Now that we've set up an auto-scaling group, let's see how our architecture performs under heavy load.
+This workshop uses [Blazemeter](https://blazemeter.com) to run load testing. If you have a personal preference, feel free to use that instead. BlazeMeter lets you run up to 10 tests per month for free, with some constraints.
+
+1. If you don't have a BlazeMeter account, create one on their site.
+
+2. Under **Projects**, create one for your tests. 
+
+3. Click **Create Test**, and select **Performance Tests**.
+
+4. At the top of the form, click **Enter URL/API Calls**. Use the URL of your load balancer with `/computation` fragment. This is a **GET** request.
+
+> e.g. `http://alb-209238178.ap-southeast-1.elb.amazonaws.com/computation`
+
+> **Note**: The app logic behind the `/computation` fragment is a deliberately computationally-expensive process. If you visit this page on your browser, there will be a subtle slowness in the response as it performs calculations in the server. On its own, it shouldn't be much, but when forced to perform the same calculation in bulk (like in this load test), the compute costs will eventually bring the server inoperable. 
+
+1. Under **Load Configuration**:
+  1. Set total users to `50`.
+  2. Set duration to the maximum of `20` minutes.
+  3. Set ramp up time to `1` minute.
+
+2. When you're satisfied with your settings, click the green **Run Test** button towards the left of the form.
+
+
+BlazeMeter will take a few minutes to prepare running your tests, then it will bombard your load balancer with HTTP requests for the next 20 minutes, while providing a nice visualization of the performance of your server during the test.
+
+During this time, take note of your instances and how they react:
+
+- Select an EC2 instance, then navigate to the **Monitoring** tab at the bottom. Keep an eye on what happens to your `CPU Utilization` as the test progresses. You can click on the graph to zoom it in.
+
+- You can also do the same with your load balancer.
+
+- If you navigate to your auto-scaling group, you can review the actions your ASG decide to take in the **Activity History** tab, monitor the instances managed by the ASG in the **Instances** tab, and check out CloudWatch graphs on **Monitoring**.
+
+
+During your load testing, you should see that the CPU utilization of your EC2 instances start spiking towards `100%` CPU utilization as the load test requests ramp up. Eventually you should see new EC2 instances get created by your ASG to help distribute the load.
+
+After the testing completes, your ASG will maintain your fleet size for a while to account for errant traffic, then after seeing that demand has gone down, it will also start removing EC2 instances to save you costs.
+
+Sample results will look like the following:
+
+![results before scale](__assets/loadtest-beforescale.png)
+
+![results after scale](__assets/loadtest-afterscale.png)
+
 
 
 ## Summary
 
-Application Load Balancers automatically distribute incoming requests to all the **healthy** targets inside the target group attached to it.
-The ALB takes care of routing to the instance's private IP addresses (even if they change) so you don't have to.
+Auto-scaling groups introduce automation into scaling and repairing infrastructure fleets on the AWS cloud.
+Because we are able to provision new resources so quickly on the AWS cloud, we don't have to think so much about how much capacity / resources we need in the future like in traditional IT infrastrucutre --- rather, we only want to know how much we need _right now_. We can always adjust to respond rapidly at any time. Auto-scaling groups make that whole process much easier by automating the process completely.
 
-![ALB routing to target group](__assets/alb-tg.png)
-
-Unlike physical hardware, ALBs also automatically scale to meet current demand.
-If your application is experiencing high volumes of network traffic, ALBs will automatically adjust to be able to address all that.
-
-In this module, you learned how to create an AMI, so you can repeatedly create copies of your instances,
-as well as how to create load balancers, so you can start scaling out your applications.
-
-In the next module, we'll make that architecture a bit more intelligent, and use auto-scaling
-to make our application adapt automatically to changing demand and usage, as well as be able to
-self-repair itself when the needs for it arise.
+In the next module, let's expand our web application a bit to use other AWS services.
 
 
-**Next:** [Improve scalability with auto-scaling](team-siklab/workshop-simple-webapp/tree/module-02)
+**Next:** [Using S3 to store file uploads](team-siklab/workshop-simple-webapp/tree/module-04)
