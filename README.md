@@ -52,7 +52,7 @@ This workshop will use Node.js as a language medium, so it will be handy if you 
 
 ### Git
 
-This workshop will use Git as a platform medium, so 
+This workshop will use Git as a platform medium, so it will be handy if you already know Git.
 
 
 
