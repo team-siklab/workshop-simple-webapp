@@ -66,4 +66,3 @@ You must complete each module before proceeding to the next.
 3. [Improve scalability with auto-scaling](../../tree/module-03)
 4. [Using S3 to store file uploads](../../tree/module-04)
 5. [Improve security with IAM Roles](../../tree/module-05)
-6. [Offload file uploads to AWS Lambda](../../tree/module-06)
