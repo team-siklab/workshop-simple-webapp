@@ -58,17 +58,90 @@ In our scenario, our web application only needs to be able to upload new images 
 
 We should update our policy to reflect this, and not have it over-provision permissions.
 
+#### high-level instructions
+
+Update the IAM policy you created to only allow `s3:PutObject*`. 
+
+<details>
+  <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
+  <p>
+
+1. Go to your IAM dashboard, and go to **Policies**.
+
+2. Look for the policy you created from the previous module, and click the name. 
+
+3. In the resulting page, click **Edit policy**.
+
+4. Under the `S3` section, revoke all permissions, except those that start with `PutObject` and `GetObject`.
+
+> **Note:** This is definitely still too many permissions than needed, but for the purposes of this workshop, let's leave this at that.
+
+5. Save the updated policy.
+
+  </p>
+</details>
+
+---
+
+### 3. Create an IAM role for your web servers
+
+You can think of an IAM role as a sort of wrapper of AWS resources --- permissions attached
+to roles that have been given to resources inherit the permissions on it, even if there are no
+IAM access credentials present on them.
+
+So an IAM role that has permissions to write to an S3 bucket lends that same permission to 
+an EC2 instance that has had that role assigned to it. We'll use this mechanism to more securely manage
+what our web application can and cannot do.
+
+#### High-level instructions
+
+Create a new IAM role, and assign the policy you just updated to it.
+
+<details>
+  <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
+  <p>
+
+1. Still in your IAM dashboard, go to **Roles**. Click **Create role**.
+   
+2. This role will be assigned to EC2 instances, so select **EC2** as the service that will use this role.
+
+3. For **Permissions**, select the policy you just updated.
+
+4. At the very last step, give your role a unique, memorable name, then click **Create role**.
+  </p>
+</details>
+
+---
+
+###  4. Update your launch configuration to assign your new role to your web servers.
+
+You will need to adjust your ASG launch configuration to use your new IAM role for all
+EC2 instances it creates. This way, all copies of your web server will have the permission to 
+upload images to S3.
+
+#### High-level instructions
+
+Create a copy of your launch configuration, and adjust it to use your new IAM role.
+Update your auto-scaling group to use this new launch configuration.
+
+<details>
+  <summary><strong>Step-by-step instructions (click to expand):</strong></summary>
+  <p>
+1. Go to your EC2 dashboard and navigate to your **Launch configurations**.
+
+2. Look for your current configuration, and opt to make a copy of it.
+
+3. In `Step 3` of the resulting wizard, adjust the value of **IAM Role** so that it matches the role you just created. Save all your changes.
+
+4. Navigate to your **Auto scaling groups**, and edit your current ASG so that it uses your updated launch configuration. Save your changes to your ASG.
+  1. Also remove the two `export` statements for `AWS_ACCESS_KEY` and `AWS_SECRET_ACCESS_KEY` from the configuration **User data**. This way we our access keys are not hardcoded anywhere in our system.
+
+5. Terminate the current instances under your ASG, and let it self-heal. This may take a few minutes.
+
+6. Confirm that the web server now has permission to upload to your S3 bucket again by attempting to upload a file from the image upload form.
+  </p>
+</details>
+
 ## Summary
 
-Amazon S3 allows you to store virtually unlimited files on virtually unlimited storage in a very
-cost-efficient manner, while keeping them highly available and highly durable. Amazon S3 boasts a durability of 99.999999999% (that's 11 nines!). To put that into perspective, if you were to put
-10,000,000 files into an S3 bucket, you can expect to lose only one of those files in the next 10,000 years.
-
-An understated advantage of using Amazon S3 is that it takes away load from your web servers.
-For example, when you visit the landing page of [Amazon.com](https://amazon.com), the landing page makes 
-around ~250 HTTPS requests to serve your page. Of these 250, only 206 are of static files, like images, CSS, and JS files. Those static files account for around **4.15 MB** of the total 4.6 MB of data transfer. If those files were served from Amazon S3, the web servers would get **80%** reduction in request counts, and a **90%** reduction in data throughput. That's very significant.
-
-In this module, we also touched a bit into implementing security and credentials into our web application, however, we honestly did it in a very insecure and dangerous way (like saving our access keys to the server environment variables --- yikes!). In the next module, let's explore ways to improve that.
-
-
-**Next:** [Improve security with IAM Roles](team-siklab/workshop-simple-webapp/tree/module-04)
+Misplaced access keys (being committed to source control, leaving them in plaintext in a file somewhere, etc) is one of the leading causes of unauthorized entry into software systems. By leveraging something like IAM roles, which lets you apply permissions directly to resources without using access keys (essentially branding certain resources as "trusted"), you significantly reduce this risk, and help protect your systems further.
