@@ -181,7 +181,7 @@ If you don't have any preferences, `tmux` is a good choice.
   6. Clone this repository onto youjr machine by running `git clone https://github.com/team-siklab/workshop-simple-webapp.git webapp`.
   
   7. We've already prepared this project repository to automatically install everything it needs to run a server.
-     `cd webapp` to go into your project directory, and then run `npm install` to install all the project dependencies.
+     `cd webapp` to go into your project directory, switch to the module branch with `git checkout module-01`, and then run `npm install` to install all the project dependencies.
 
   8. When you terminate your SSH connection later, this will also stop all processes you've run (including your web server).
      To prevent this from happening, we can use a terminal multiplexer to create a process separate from the one governing our connection.
